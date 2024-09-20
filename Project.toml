@@ -1,0 +1,7 @@
+name = "IR2Reg"
+uuid = "d8b20677-8476-5485-a89f-d14abca248d9"
+authors = ["Nathan Allaire "]
+version = "0.1.0"
+
+[compat]
+julia = "1.9"
