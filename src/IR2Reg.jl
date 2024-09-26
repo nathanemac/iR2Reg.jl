@@ -10,7 +10,7 @@ using ProximalOperators
 using ShiftedProximalOperators
 using SolverCore
 using RegularizedProblems
-
+using Quadmath
 
 function __init__()
     #empty for now
