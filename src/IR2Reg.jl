@@ -6,7 +6,7 @@ using NLPModels
 using Printf
 #using ProxTV
 using ProximalOperators
-using RegularizedOptimization
+#using RegularizedOptimization
 using ShiftedProximalOperators
 using SolverCore
 using RegularizedProblems
