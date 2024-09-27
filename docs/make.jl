@@ -16,6 +16,14 @@ makedocs(;
     sitename = "IR2Reg.jl",
     format = Documenter.HTML(; canonical = "https://nathanemac.github.io/IR2Reg.jl"),
     pages = ["index.md"; numbered_pages],
+    edit_url = "https://github.com/nathanemac/IR2Reg.jl/edit/{branch}/{path}",
 )
 
-deploydocs(; repo = "github.com/nathanemac/IR2Reg.jl")
+deploydocs(
+    repo = "github.com/nathanemac/IR2Reg.jl.git",
+    target = "gh-pages",
+    versions = [
+        "stable" => "v$(IR2Reg.version)",  # for tagged versions
+        "dev" => "main",  # dev branch
+    ],
+)
