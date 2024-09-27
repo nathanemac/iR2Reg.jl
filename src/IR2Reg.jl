@@ -4,13 +4,13 @@ using ADNLPModels
 using LinearAlgebra
 using NLPModels
 using Printf
-#using ProxTV
+# using ProxTV
 using ProximalOperators
-using RegularizedOptimization
+# using RegularizedOptimization
 using ShiftedProximalOperators
 using SolverCore
 using RegularizedProblems
-
+using Quadmath
 
 function __init__()
     #empty for now
