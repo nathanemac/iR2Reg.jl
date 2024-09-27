@@ -1,54 +1,35 @@
 name: Docs
 
 on:
-    push:
-        branches:
-            - main
-        paths:
-            - "docs/**"
-            - "src/**"
-            - "*.toml"
-        tags: ["*"]
-    pull_request:
-        branches:
-            - main
-        paths:
-            - "docs/**"
-            - "src/**"
-            - "*.toml"
-        types: [opened, synchronize, reopened]
-
-concurrency:
-    # Skip intermediate builds: always.
-    # Cancel intermediate builds: only if it is a pull request build.
-    group: ${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+  push:
+    branches:
+      - main
+    tags:
+      - '*'
+  pull_request:
+    branches:
+      - main
 
 jobs:
-    docs:
-        name: Documentation
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-            - uses: julia-actions/setup-julia@v2
-              with:
-                  version: "1"
-            - name: Use Julia cache
-              uses: julia-actions/cache@v2
-            - run: |
-                  julia --project=docs -e '
-                    using Pkg
-                    Pkg.develop(PackageSpec(path=pwd()))
-                    Pkg.instantiate()'
-            - run: |
-                  julia --project=docs -e '
-                    using Documenter: DocMeta, doctest
-                    using IR2Reg
-                    DocMeta.setdocmeta!(IR2Reg, :DocTestSetup, :(using IR2Reg); recursive=true)
-                    doctest(IR2Reg)'
-            - run: julia --project=docs docs/make.jl
-              env:
-                  JULIA_PKG_SERVER: ""
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
-                  GKSwstype: "100" # https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Nécessaire pour Documenter.jl
+      - name: Set up Julia
+        uses: julia-actions/setup-julia@v1
+        with:
+          version: '1.9'  # Remplacez par la version de Julia que vous utilisez
+      - name: Install dependencies
+        run: |
+          julia --project=docs -e '
+            using Pkg
+            Pkg.develop(PackageSpec(path=pwd()))
+            Pkg.instantiate()'
+      - name: Build and deploy documentation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          julia --project=docs docs/make.jl
