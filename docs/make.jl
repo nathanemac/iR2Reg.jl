@@ -17,17 +17,17 @@ const numbered_pages = [
 makedocs(
     modules = [IR2Reg],
     authors = "Nathan Allaire ",
-    repo = "https://github.com/nathanemac/IR2Reg.jl",
-    sitename = "IR2Reg.jl",
+    repo = "https://github.com/nathanemac/iR2Reg.jl",
+    sitename = "iR2Reg.jl",
     format = Documenter.HTML(
-        edit_link = "https://github.com/nathanemac/IR2Reg.jl/edit/main/{path}",
-        repolink = "https://github.com/nathanemac/IR2Reg.jl",
+        edit_link = "https://github.com/nathanemac/iR2Reg.jl/edit/main/{path}",
+        repolink = "https://github.com/nathanemac/iR2Reg.jl",
     ),
     pages = ["index.md"; numbered_pages],
 )
 
 deploydocs(
-    repo = "github.com/nathanemac/IR2Reg.jl.git",
+    repo = "github.com/nathanemac/iR2Reg.jl.git",
     target = "gh-pages",
     versions = [
         "stable" => "v$(version)",  # for tagged versions

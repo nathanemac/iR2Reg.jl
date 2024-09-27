@@ -21,7 +21,7 @@ jobs:
             - name: Set up Julia
               uses: julia-actions/setup-julia@v1
               with:
-                  version: "1.9" # Remplacez par la version de Julia que vous utilisez
+                  version: "1.9"
             - name: Install dependencies
               run: |
                   julia --project=docs -e '
