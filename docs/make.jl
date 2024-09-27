@@ -26,4 +26,5 @@ deploydocs(
         "stable" => "v$(IR2Reg.version)",  # for tagged versions
         "dev" => "main",  # dev branch
     ],
+    devbranch = "main",
 )
