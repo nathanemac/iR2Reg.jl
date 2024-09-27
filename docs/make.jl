@@ -5,9 +5,8 @@ using TOML
 
 DocMeta.setdocmeta!(IR2Reg, :DocTestSetup, :(using IR2Reg); recursive = true)
 
-project_file = joinpath("..", "Project.toml")
-project_data = TOML.parsefile(project_file)
-version = project_data["version"]
+
+version = "0.1.0"
 
 const page_rename = Dict("developer.md" => "Developer docs")
 const numbered_pages = [
