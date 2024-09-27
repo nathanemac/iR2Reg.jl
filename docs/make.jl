@@ -14,9 +14,10 @@ makedocs(;
     authors = "Nathan Allaire ",
     repo = "https://github.com/nathanemac/IR2Reg.jl/blob/{commit}{path}#{line}",
     sitename = "IR2Reg.jl",
-    format = Documenter.HTML(; canonical = "https://nathanemac.github.io/IR2Reg.jl"),
+    format = Documenter.HTML(
+        edit_url = "https://github.com/nathanemac/IR2Reg.jl/edit/{branch}/{path}",
+    ),
     pages = ["index.md"; numbered_pages],
-    edit_url = "https://github.com/nathanemac/IR2Reg.jl/edit/{branch}/{path}",
 )
 
 deploydocs(
