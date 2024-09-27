@@ -29,9 +29,9 @@ makedocs(
 deploydocs(
     repo = "github.com/nathanemac/iR2Reg.jl.git",
     target = "gh-pages",
-    versions = [
-        "stable" => "v$(version)",  # for tagged versions
-        "dev" => "main",             # dev branch
-    ],
+    #versions = [
+    #    "stable" => "v$(version)",  # for tagged versions
+    #    "dev" => "main",             # dev branch
+    #],
     devbranch = "main",
 )
