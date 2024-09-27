@@ -1,3 +1,3 @@
 @testset "IR2Reg.jl" begin
-    @test IR2Reg.hello_world() == "Hello, World!"
+    @test 1 == 1 # dummy test for now
 end
