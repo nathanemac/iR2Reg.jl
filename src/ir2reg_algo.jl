@@ -316,8 +316,10 @@ function iR2Solver(
         h = NormL1(Π[1](reg_nlp.h.lambda))
     elseif occursin("NormL2", string(reg_nlp.h))
         h = NormL2(Π[1](reg_nlp.h.lambda))
+    elseif occursin("NormLp", string(reg_nlp.h))
+        h = NormLp(Π[1](reg_nlp.h.lambda), reg_nlp.h.p)
     else
-        @error "Regularizer not supported. One must choose between NormL0, NormL1, NormL2." #TODO add more regularizers.
+        @error "Regularizer not supported. One must choose between NormL0, NormL1, NormL2, NormLp." #TODO add more regularizers.
     end
     ψ = nothing # initialize ψ to nothing then set it in the main loop
     ξ = one(params.H)
@@ -421,7 +423,7 @@ The objective and gradient of `nlp` will be accessed.
 [ Info:     30  9.8e-01  1.0e-01  8.1e-01  1.0e+00  3.1e+01  9.1e-02  2.5e-02               ↘ \n
 [ Info:     35  1.0e+00  0.0e+00  1.0e+00 -1.8e+00  3.1e+01  0.0e+00  2.7e-02               ↗ \n
 [ Info:     40  9.9e-01  4.7e-03  1.7e+03  6.8e-01  2.8e+02  4.7e-03  1.0e-03               = \n
-[ Info: R2: terminating with √(ξ/ν) = 1.72725123540098540832733280958833139e+03 \n
+[ Info: iR2Reg: terminating with √(ξ/ν) = 1.72725123540098540832733280958833139e+03 \n
 "Execution stats: first-order stationary" \n
 """
 function iR2Reg(
@@ -548,7 +550,7 @@ function solve!(
     hxk = @views h(solver.xk[p.ph][selected]) # ph = 1 au début
     solver.special_counters[:h][p.ph] += 1
     if hxk == Inf
-        verbose > 0 && @info "R2: finding initial guess where nonsmooth term is finite"
+        verbose > 0 && @info "iR2Reg: finding initial guess where nonsmooth term is finite"
         prox!(solver.xk[p.ph][selected], h, x0, one(eltype(x0)))
         solver.special_counters[:prox][p.ph] += 1
         hxk = @views h(solver.xk[p.ph][selected])
@@ -662,8 +664,9 @@ function solve!(
         p.H(max(1, abs(p.H(solver.hk[p.ps]))) * 10 * eps(p.H)) # on evite les casts en mettant tout en la précision de s. Ensuite, on cast tout en H pour éviter les erreurs d'arrondis.
 
     stats.iter > 1 && (
-        solver.ξ > 0 ||
-        error("R2: prox-gradient step should produce a decrease but ξ = $(solver.ξ)")
+        solver.ξ > 0 || error(
+            "iR2Reg: prox-gradient step should produce a decrease but ξ = $(solver.ξ)",
+        )
     ) # on check après la première itération car dans certains Float16 crée beaucoup d'erreurs d'arrondis
     sqrt_ξ_νInv = solver.ξ ≥ 0 ? sqrt(solver.ξ / p.ν) : sqrt(-solver.ξ / p.ν)
     ϵ += ϵr * sqrt_ξ_νInv # make stopping test absolute and relative
@@ -867,7 +870,7 @@ function solve!(
             ],
             colsep = 1,
         )
-        @info "R2: terminating with √(ξ/ν) = $(sqrt_ξ_νInv)"
+        @info "iR2Reg: terminating with √(ξ/ν) = $(sqrt_ξ_νInv)"
     end
 
     set_solution!(stats, solver.xk[end])
