@@ -850,7 +850,7 @@ function solve!(
         T,
         P,
     )
-    sqrt_ξ_νInv = solver.ξ ≥ 0 ? sqrt(solver.ξ / p.ν) : sqrt(-solver.ξ / p.ν) # recompute it here since the value is modified in the inner loop but not updated in the outer loop
+    sqrt_ξ_νInv = solver.ξ ≥ 0 ? sqrt(solver.ξ / p.ν) : sqrt(-solver.ξ / p.ν) # recompute it here since the value is modified in the inner loop but not updated in the outer loop.
 
     verbose > 0 && if stats.status == :first_order
         @info log_row(
