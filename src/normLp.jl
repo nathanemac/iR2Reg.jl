@@ -39,7 +39,7 @@ end
         - p: degree of the Lp norm.
         - objGap: desired quality of the solution in terms of duality gap.
 """
-function inexact_prox!(h::NormLp, y::AbstractArray, x::AbstractArray, objGap::Real)
+function prox!(h::NormLp, y::AbstractArray, x::AbstractArray, objGap::Real)
     n = length(y)
     ws = ProxTV.newWorkspace(n)
     positive = all(x -> x >= 0, y) ? 1 : 0
@@ -110,7 +110,7 @@ function (ψ::ShiftedNormLp)(y::AbstractVector)
     return ψ.h(ψ.xsy)
 end
 
-function inexact_prox!(ψ::ShiftedNormLp, y::AbstractArray, x::AbstractArray, objGap::Real)
+function prox!(ψ::ShiftedNormLp, y::AbstractArray, x::AbstractArray, objGap::Real)
     n = length(y)
     ws = ProxTV.newWorkspace(n)
     info = []
