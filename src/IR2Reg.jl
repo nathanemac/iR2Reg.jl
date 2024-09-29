@@ -19,5 +19,6 @@ end
 # main library functions
 include("ir2reg_algo.jl")
 include("utils.jl")
+include("normLp.jl")
 
 end
