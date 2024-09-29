@@ -1,6 +1,6 @@
 module IR2Reg
 
-export NormLp, inexact_prox!, ShiftedNormLp, shifted, fun_name, fun_expr, fun_params, shift!
+export NormLp, prox!, ShiftedNormLp, shifted, fun_name, fun_expr, fun_params, shift!
 
 using ADNLPModels
 using LinearAlgebra
