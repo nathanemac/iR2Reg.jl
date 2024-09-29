@@ -310,7 +310,7 @@ function iR2Solver(
         :∇f => zeros(Int, length(Π)),
         :prox => zeros(Int, length(Π)),
     )
-    if occursin("NormL0", string(reg_nlp.h))
+    if occursin("NormL0", string(reg_nlp.h)) #need to do this to make precision of h match the lowest precision of Π for first iteration
         h = NormL0(Π[1](reg_nlp.h.lambda))
     elseif occursin("NormL1", string(reg_nlp.h))
         h = NormL1(Π[1](reg_nlp.h.lambda))
@@ -523,7 +523,8 @@ function solve!(
         solver.xk[i] .= x0
     end
     has_bnds = solver.has_bnds
-    if has_bnds
+    if has_bnds # TODO
+        @error "Bound constraints are not supported yet."
         l_bound = solver.l_bound
         u_bound = solver.u_bound
         l_bound_m_x = solver.l_bound_m_x
@@ -663,7 +664,7 @@ function solve!(
     stats.iter > 1 && (
         solver.ξ > 0 ||
         error("R2: prox-gradient step should produce a decrease but ξ = $(solver.ξ)")
-    ) # on check après la première itération car parfois Float16 crée beaucoup d'erreurs d'arrondis
+    ) # on check après la première itération car dans certains Float16 crée beaucoup d'erreurs d'arrondis
     sqrt_ξ_νInv = solver.ξ ≥ 0 ? sqrt(solver.ξ / p.ν) : sqrt(-solver.ξ / p.ν)
     ϵ += ϵr * sqrt_ξ_νInv # make stopping test absolute and relative
 
@@ -849,6 +850,7 @@ function solve!(
         T,
         P,
     )
+    sqrt_ξ_νInv = solver.ξ ≥ 0 ? sqrt(solver.ξ / p.ν) : sqrt(-solver.ξ / p.ν) # recompute it here since the value is modified in the inner loop but not updated in the outer loop
 
     verbose > 0 && if stats.status == :first_order
         @info log_row(
