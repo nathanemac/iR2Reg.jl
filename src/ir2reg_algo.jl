@@ -317,7 +317,7 @@ function iR2Solver(
     elseif occursin("NormL2", string(reg_nlp.h))
         h = NormL2(Π[1](reg_nlp.h.lambda))
     elseif occursin("NormLp", string(reg_nlp.h))
-        h = NormLp(Π[1](reg_nlp.h.lambda), reg_nlp.h.p)
+        h = NormLp(Π[1](reg_nlp.h.λ), reg_nlp.h.p)
     else
         @error "Regularizer not supported. One must choose between NormL0, NormL1, NormL2, NormLp." #TODO add more regularizers.
     end
