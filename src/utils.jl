@@ -213,7 +213,12 @@ function recompute_prox!(nlp, solver, p, k, Π)
 
     if !(solver.inexact_prox)
         solver.ψ = shifted(solver.h, solver.xk[p.ps])
-        prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps].(p.ν)) # on recalcule le prox en la précision de ps.
+        ShiftedProximalOperators.prox!(
+            solver.sk[p.ps],
+            solver.ψ,
+            solver.mν∇fk[p.ps],
+            Π[p.ps].(p.ν),
+        ) # on recalcule le prox en la précision de ps.
     else
         solver.ψ = IR2Reg.shifted(solver.h, solver.xk[p.ps])
         IR2Reg.prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps].(p.ν))

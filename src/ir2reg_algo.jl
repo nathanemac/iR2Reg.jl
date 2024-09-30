@@ -555,7 +555,7 @@ function solve!(
     if hxk == Inf
         verbose > 0 && @info "iR2Reg: finding initial guess where nonsmooth term is finite"
         if !(solver.inexact_prox)
-            prox!(solver.xk[p.ph][selected], h, x0, one(eltype(x0)))
+            ProximalOperators.prox!(solver.xk[p.ph][selected], h, x0, one(eltype(x0)))
         else
             IR2Reg.prox!(solver.xk[p.ph][selected], h, x0, one(eltype(x0)))
         end
@@ -645,14 +645,19 @@ function solve!(
     set_solver_specific!(stats, :smooth_obj, T(solver.fk[end]))
     set_solver_specific!(stats, :nonsmooth_obj, T(solver.hk[end]))
     if !(solver.inexact_prox)
-        solver.ψ = shifted(solver.h, solver.xk[p.ps]) # therefore ψ FP format is s FP format
+        solver.ψ = ShiftedProximalOperators.shifted(solver.h, solver.xk[p.ps]) # therefore ψ FP format is s FP format
     else
         solver.ψ = IR2Reg.shifted(solver.h, solver.xk[p.ps]) # therefore ψ FP format is s FP format
     end
     φk(d) = dot(solver.gfk[p.ps], d)
     mk(d) = φk(d) + solver.ψ(d)
     if !(solver.inexact_prox)
-        prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps](p.ν))
+        ShiftedProximalOperators.prox!(
+            solver.sk[p.ps],
+            solver.ψ,
+            solver.mν∇fk[p.ps],
+            Π[p.ps](p.ν),
+        )
     else
         IR2Reg.prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps](p.ν))
     end
@@ -816,7 +821,12 @@ function solve!(
             φk(d) = dot(solver.gfk[p.ps], d)
             mk(d) = φk(d) + solver.ψ(d)
             if !(solver.inexact_prox)
-                prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps](p.ν))
+                ShiftedProximalOperators.prox!(
+                    solver.sk[p.ps],
+                    solver.ψ,
+                    solver.mν∇fk[p.ps],
+                    Π[p.ps](p.ν),
+                )
             else
                 IR2Reg.prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps](p.ν))
             end
