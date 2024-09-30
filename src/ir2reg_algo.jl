@@ -255,6 +255,7 @@ mutable struct iR2Solver{R<:Real,S<:AbstractVector} <: AbstractOptimizationSolve
     ψ::Any#::G
     ξ::Any
     params::iR2RegParams
+    inexact_prox::Bool
 end
 
 """
@@ -310,19 +311,20 @@ function iR2Solver(
         :∇f => zeros(Int, length(Π)),
         :prox => zeros(Int, length(Π)),
     )
-    if occursin("NormL0", string(reg_nlp.h)) #need to do this to make precision of h match the lowest precision of Π for first iteration
+    if typeof(h) <: NormL0 #need to do this to make precision of h match the lowest precision of Π for first iteration
         h = NormL0(Π[1](reg_nlp.h.lambda))
-    elseif occursin("NormL1", string(reg_nlp.h))
+    elseif typeof(h) <: NormL1
         h = NormL1(Π[1](reg_nlp.h.lambda))
-    elseif occursin("NormL2", string(reg_nlp.h))
+    elseif typeof(h) <: NormL2
         h = NormL2(Π[1](reg_nlp.h.lambda))
-    elseif occursin("NormLp", string(reg_nlp.h))
+    elseif typeof(h) <: NormLp
         h = NormLp(Π[1](reg_nlp.h.λ), reg_nlp.h.p)
     else
         @error "Regularizer not supported. One must choose between NormL0, NormL1, NormL2, NormLp." #TODO add more regularizers.
     end
     ψ = nothing # initialize ψ to nothing then set it in the main loop
     ξ = one(params.H)
+    inexact_prox = (typeof(h) <: NormLp) ? true : false
     return iR2Solver(
         xk,
         mν∇fk,
@@ -345,6 +347,7 @@ function iR2Solver(
         ψ,
         ξ,
         params,
+        inexact_prox,
     )
 end
 
@@ -551,7 +554,11 @@ function solve!(
     solver.special_counters[:h][p.ph] += 1
     if hxk == Inf
         verbose > 0 && @info "iR2Reg: finding initial guess where nonsmooth term is finite"
-        prox!(solver.xk[p.ph][selected], h, x0, one(eltype(x0)))
+        if !(solver.inexact_prox)
+            prox!(solver.xk[p.ph][selected], h, x0, one(eltype(x0)))
+        else
+            IR2Reg.prox!(solver.xk[p.ph][selected], h, x0, one(eltype(x0)))
+        end
         solver.special_counters[:prox][p.ph] += 1
         hxk = @views h(solver.xk[p.ph][selected])
         if hxk == Inf
@@ -637,10 +644,18 @@ function solve!(
     set_objective!(stats, T(solver.fk[end]) + T(solver.hk[end])) # TODO maybe change this to avoid casting
     set_solver_specific!(stats, :smooth_obj, T(solver.fk[end]))
     set_solver_specific!(stats, :nonsmooth_obj, T(solver.hk[end]))
-    solver.ψ = shifted(solver.h, solver.xk[p.ps]) # therefore ψ FP format is s FP format
+    if !(solver.inexact_prox)
+        solver.ψ = shifted(solver.h, solver.xk[p.ps]) # therefore ψ FP format is s FP format
+    else
+        solver.ψ = IR2Reg.shifted(solver.h, solver.xk[p.ps]) # therefore ψ FP format is s FP format
+    end
     φk(d) = dot(solver.gfk[p.ps], d)
     mk(d) = φk(d) + solver.ψ(d)
-    prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps](p.ν))
+    if !(solver.inexact_prox)
+        prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps](p.ν))
+    else
+        IR2Reg.prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps](p.ν))
+    end
     while (any(isnan, solver.sk[p.ps]) || any(isinf, solver.sk[p.ps])) && p.activate_mp
         if p.ps == P
             stats.status = :exception
@@ -763,7 +778,12 @@ function solve!(
                 end
                 grad!(nlp, solver.xk[p.pg], solver.gfk[p.pg])
                 solver.special_counters[:∇f][p.pg] += 1
-                shift!(solver.ψ, solver.xk[p.ps])
+                if !(solver.inexact_prox)
+                    shift!(solver.ψ, solver.xk[p.ps])
+                else
+                    IR2Reg.shift!(solver.ψ, solver.xk[p.ps])
+                end
+
                 for i = 1:P
                     solver.xk[i] .= solver.xk[p.ps] # on met à jour fk en les précisions de Π. Exemple : fxk est en float16 à l'itération 0, on caste fxk en float32 et float64 pour les autres précisions et on les ajoute à fk
                     solver.fk[i] = Π[i](fkn)
@@ -795,7 +815,11 @@ function solve!(
             # new step starts here
             φk(d) = dot(solver.gfk[p.ps], d)
             mk(d) = φk(d) + solver.ψ(d)
-            prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps](p.ν))
+            if !(solver.inexact_prox)
+                prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps](p.ν))
+            else
+                IR2Reg.prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps](p.ν))
+            end
             solver.special_counters[:prox][p.ps] += 1
             mks = mk(solver.sk[p.ps]) # on evite les casts en mettant tout en la précision de s
             solver.ξ =
