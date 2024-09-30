@@ -784,7 +784,7 @@ function solve!(
                 grad!(nlp, solver.xk[p.pg], solver.gfk[p.pg])
                 solver.special_counters[:∇f][p.pg] += 1
                 if !(solver.inexact_prox)
-                    shift!(solver.ψ, solver.xk[p.ps])
+                    ShiftedProximalOperators.shift!(solver.ψ, solver.xk[p.ps])
                 else
                     IR2Reg.shift!(solver.ψ, solver.xk[p.ps])
                 end
