@@ -23,8 +23,9 @@ function (h::NormLp)(x::AbstractArray)
     return ProxTV.LPnorm(x, length(x), h.p)
 end
 
+# TODO : change signature to match prox!(ψ::ShiftedNormLp)
 """
-    inexact_prox!( h::NormLp, x::AbstractArray, y::AbstractArray, objGap::Real)
+    prox!( h::NormLp, x::AbstractArray, y::AbstractArray, objGap::Real)
     Given a reference signal y and a penalty parameter lambda, solves the proximity operator
 
         min_x 0.5 ||x-y||^2 + λ||x||_p ,
@@ -119,26 +120,28 @@ function prox!(
 )
     n = length(y)
     ws = ProxTV.newWorkspace(n)
-    info = []
 
-    # Calcul de y_shifted = xk + sj + q
+    # Allocate info array with appropriate size (based on C++ code)
+    info = zeros(Float64, 3)
+
+    # Compute y_shifted = xk + sj + q
     y_shifted = ψ.xk .+ ψ.sj .+ q
 
-    # Ajustement de lambda pour tenir compte de σ
+    # Adjust lambda to account for σ
     lambda_scaled = σ * ψ.h.λ
 
-    positive = all(v -> v >= 0, y_shifted) ? 1 : 0
+    positive = Int32(all(v -> v >= 0, y_shifted) ? 1 : 0)
 
-    # Allocation du vecteur x pour stocker la solution intermédiaire
+    # Allocate the x vector to store the intermediate solution
     x = similar(y)
 
-    # Appel de la fonction PN_LPp
+    # Call the PN_LPp function
     ProxTV.PN_LPp(y_shifted, lambda_scaled, x, info, n, ψ.h.p, ws, positive, objGap)
 
-    # Calcul de s = x - xk - sj
+    # Compute s = x - xk - sj
     s = x .- ψ.xk .- ψ.sj
 
-    # Stockage du résultat dans y
+    # Store the result in y
     y .= s
 
     return y
