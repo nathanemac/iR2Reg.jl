@@ -221,7 +221,13 @@ function recompute_prox!(nlp, solver, p, k, Π)
         ) # on recalcule le prox en la précision de ps.
     else
         solver.ψ = IR2Reg.shifted(solver.h, solver.xk[p.ps])
-        IR2Reg.prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps].(p.ν))
+        IR2Reg.prox!(
+            solver.sk[p.ps],
+            solver.ψ,
+            solver.mν∇fk[p.ps],
+            Π[p.ps].(p.ν),
+            objGap = p.objGap,
+        )
     end
     solver.special_counters[:prox][p.ps] += 1
     for i = 1:length(Π)

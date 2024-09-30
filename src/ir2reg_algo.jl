@@ -115,6 +115,7 @@ mutable struct iR2RegParams{T<:Real,H<:Real}
     H::Any # H is the "Highest" floating point format in Π.
     σk::H
     ν::H
+    objGap::H
 end
 
 
@@ -140,6 +141,7 @@ Create an instance of the iR2RegParams struct with specified or default paramete
 - `H=Float128`: The highest floating point format in Π. Used to cast some inexpensive values to avoid rounding errors.
 - `σk=H(1.)`: Current value of σk (refer to the algorithm in the paper).
 - `ν=eps(H)^(1/5)`: Current value of ν = 1/σk (refer to the algorithm in the paper).
+- `objGap=H(1e-4)`: Desired quality of the solution in terms of duality gap when an inexact prox computation is involved.
 
 # Returns
 - An instance of `iR2RegParams` with the specified or default parameter values.
@@ -169,6 +171,7 @@ function iR2RegParams(
     H = Float128,
     σk = H(1.0),
     ν = H(1.0),
+    objGap = H(1e-4),
 )
     if length(Π) == 0
         error("Π must be a non-empty vector of floating point types")
@@ -199,6 +202,7 @@ function iR2RegParams(
         H,
         σk,
         ν,
+        objGap,
     )
 end
 
@@ -557,7 +561,13 @@ function solve!(
         if !(solver.inexact_prox)
             ProximalOperators.prox!(solver.xk[p.ph][selected], h, x0, one(eltype(x0)))
         else
-            IR2Reg.prox!(solver.xk[p.ph][selected], h, x0, one(eltype(x0)))
+            IR2Reg.prox!(
+                solver.xk[p.ph][selected],
+                h,
+                x0,
+                one(eltype(x0)),
+                objGap = p.objGap,
+            )
         end
         solver.special_counters[:prox][p.ph] += 1
         hxk = @views h(solver.xk[p.ph][selected])
@@ -659,7 +669,13 @@ function solve!(
             Π[p.ps](p.ν),
         )
     else
-        IR2Reg.prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps](p.ν))
+        IR2Reg.prox!(
+            solver.sk[p.ps],
+            solver.ψ,
+            solver.mν∇fk[p.ps],
+            Π[p.ps](p.ν),
+            objGap = p.objGap,
+        )
     end
     while (any(isnan, solver.sk[p.ps]) || any(isinf, solver.sk[p.ps])) && p.activate_mp
         if p.ps == P
@@ -828,7 +844,13 @@ function solve!(
                     Π[p.ps](p.ν),
                 )
             else
-                IR2Reg.prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps](p.ν))
+                IR2Reg.prox!(
+                    solver.sk[p.ps],
+                    solver.ψ,
+                    solver.mν∇fk[p.ps],
+                    Π[p.ps](p.ν),
+                    objGap = p.objGap,
+                )
             end
             solver.special_counters[:prox][p.ps] += 1
             mks = mk(solver.sk[p.ps]) # on evite les casts en mettant tout en la précision de s
