@@ -278,7 +278,7 @@ function iR2Solver(
     reg_nlp::AbstractRegularizedNLPModel,
     params::iR2RegParams,
     options::ROSolverOptions,
-) where {T,V}
+)
     x0 = reg_nlp.model.meta.x0
     nvar = length(x0)
     l_bound = reg_nlp.model.meta.lvar
