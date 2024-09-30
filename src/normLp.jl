@@ -110,16 +110,36 @@ function (ψ::ShiftedNormLp)(y::AbstractVector)
     return ψ.h(ψ.xsy)
 end
 
-function prox!(ψ::ShiftedNormLp, y::AbstractArray, x::AbstractArray, objGap::Real)
+function prox!(
+    y::AbstractArray,
+    ψ::ShiftedNormLp,
+    q::AbstractArray,
+    σ::Real;
+    objGap::Real = 1e-4,
+)
     n = length(y)
     ws = ProxTV.newWorkspace(n)
     info = []
 
-    # Adjust y by the shift
-    y_shifted = y .+ ψ.xk .+ ψ.sj
+    # Calcul de y_shifted = xk + sj + q
+    y_shifted = ψ.xk .+ ψ.sj .+ q
+
+    # Ajustement de lambda pour tenir compte de σ
+    lambda_scaled = σ * ψ.h.λ
+
     positive = all(v -> v >= 0, y_shifted) ? 1 : 0
 
-    # Applies the proximal operator to the shifted object
-    ProxTV.PN_LPp(y_shifted, ψ.h.λ, x, info, n, ψ.h.p, ws, positive, objGap)
-    return x
+    # Allocation du vecteur x pour stocker la solution intermédiaire
+    x = similar(y)
+
+    # Appel de la fonction PN_LPp
+    ProxTV.PN_LPp(y_shifted, lambda_scaled, x, info, n, ψ.h.p, ws, positive, objGap)
+
+    # Calcul de s = x - xk - sj
+    s = x .- ψ.xk .- ψ.sj
+
+    # Stockage du résultat dans y
+    y .= s
+
+    return y
 end
