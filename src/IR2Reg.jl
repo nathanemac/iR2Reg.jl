@@ -1,10 +1,12 @@
 module IR2Reg
 
+export prox!, shifted, shift!
+
 using ADNLPModels
 using LinearAlgebra
 using NLPModels
 using Printf
-# using ProxTV
+using ProxTV
 using ProximalOperators
 # using RegularizedOptimization
 using ShiftedProximalOperators
@@ -19,5 +21,6 @@ end
 # main library functions
 include("ir2reg_algo.jl")
 include("utils.jl")
+include("normLp.jl")
 
 end

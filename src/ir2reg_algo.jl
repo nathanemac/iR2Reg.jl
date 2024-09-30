@@ -255,6 +255,7 @@ mutable struct iR2Solver{R<:Real,S<:AbstractVector} <: AbstractOptimizationSolve
     ψ::Any#::G
     ξ::Any
     params::iR2RegParams
+    inexact_prox::Bool
 end
 
 """
@@ -277,7 +278,7 @@ function iR2Solver(
     reg_nlp::AbstractRegularizedNLPModel,
     params::iR2RegParams,
     options::ROSolverOptions,
-) where {T,V}
+)
     x0 = reg_nlp.model.meta.x0
     nvar = length(x0)
     l_bound = reg_nlp.model.meta.lvar
@@ -310,17 +311,20 @@ function iR2Solver(
         :∇f => zeros(Int, length(Π)),
         :prox => zeros(Int, length(Π)),
     )
-    if occursin("NormL0", string(reg_nlp.h))
+    if typeof(reg_nlp.h) <: NormL0 #need to do this to make precision of h match the lowest precision of Π for first iteration
         h = NormL0(Π[1](reg_nlp.h.lambda))
-    elseif occursin("NormL1", string(reg_nlp.h))
+    elseif typeof(reg_nlp.h) <: NormL1
         h = NormL1(Π[1](reg_nlp.h.lambda))
-    elseif occursin("NormL2", string(reg_nlp.h))
+    elseif typeof(reg_nlp.h) <: NormL2
         h = NormL2(Π[1](reg_nlp.h.lambda))
+    elseif typeof(reg_nlp.h) <: NormLp
+        h = NormLp(Π[1](reg_nlp.h.λ), reg_nlp.h.p)
     else
-        @error "Regularizer not supported. One must choose between NormL0, NormL1, NormL2." #TODO add more regularizers.
+        @error "Regularizer not supported. One must choose between NormL0, NormL1, NormL2, NormLp." #TODO add more regularizers.
     end
     ψ = nothing # initialize ψ to nothing then set it in the main loop
     ξ = one(params.H)
+    inexact_prox = (typeof(reg_nlp.h) <: NormLp) ? true : false
     return iR2Solver(
         xk,
         mν∇fk,
@@ -343,6 +347,7 @@ function iR2Solver(
         ψ,
         ξ,
         params,
+        inexact_prox,
     )
 end
 
@@ -421,7 +426,7 @@ The objective and gradient of `nlp` will be accessed.
 [ Info:     30  9.8e-01  1.0e-01  8.1e-01  1.0e+00  3.1e+01  9.1e-02  2.5e-02               ↘ \n
 [ Info:     35  1.0e+00  0.0e+00  1.0e+00 -1.8e+00  3.1e+01  0.0e+00  2.7e-02               ↗ \n
 [ Info:     40  9.9e-01  4.7e-03  1.7e+03  6.8e-01  2.8e+02  4.7e-03  1.0e-03               = \n
-[ Info: R2: terminating with √(ξ/ν) = 1.72725123540098540832733280958833139e+03 \n
+[ Info: iR2Reg: terminating with √(ξ/ν) = 1.72725123540098540832733280958833139e+03 \n
 "Execution stats: first-order stationary" \n
 """
 function iR2Reg(
@@ -523,7 +528,8 @@ function solve!(
         solver.xk[i] .= x0
     end
     has_bnds = solver.has_bnds
-    if has_bnds
+    if has_bnds # TODO
+        @error "Bound constraints are not supported yet."
         l_bound = solver.l_bound
         u_bound = solver.u_bound
         l_bound_m_x = solver.l_bound_m_x
@@ -547,8 +553,12 @@ function solve!(
     hxk = @views h(solver.xk[p.ph][selected]) # ph = 1 au début
     solver.special_counters[:h][p.ph] += 1
     if hxk == Inf
-        verbose > 0 && @info "R2: finding initial guess where nonsmooth term is finite"
-        prox!(solver.xk[p.ph][selected], h, x0, one(eltype(x0)))
+        verbose > 0 && @info "iR2Reg: finding initial guess where nonsmooth term is finite"
+        if !(solver.inexact_prox)
+            prox!(solver.xk[p.ph][selected], h, x0, one(eltype(x0)))
+        else
+            IR2Reg.prox!(solver.xk[p.ph][selected], h, x0, one(eltype(x0)))
+        end
         solver.special_counters[:prox][p.ph] += 1
         hxk = @views h(solver.xk[p.ph][selected])
         if hxk == Inf
@@ -634,10 +644,18 @@ function solve!(
     set_objective!(stats, T(solver.fk[end]) + T(solver.hk[end])) # TODO maybe change this to avoid casting
     set_solver_specific!(stats, :smooth_obj, T(solver.fk[end]))
     set_solver_specific!(stats, :nonsmooth_obj, T(solver.hk[end]))
-    solver.ψ = shifted(solver.h, solver.xk[p.ps]) # therefore ψ FP format is s FP format
+    if !(solver.inexact_prox)
+        solver.ψ = shifted(solver.h, solver.xk[p.ps]) # therefore ψ FP format is s FP format
+    else
+        solver.ψ = IR2Reg.shifted(solver.h, solver.xk[p.ps]) # therefore ψ FP format is s FP format
+    end
     φk(d) = dot(solver.gfk[p.ps], d)
     mk(d) = φk(d) + solver.ψ(d)
-    prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps](p.ν))
+    if !(solver.inexact_prox)
+        prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps](p.ν))
+    else
+        IR2Reg.prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps](p.ν))
+    end
     while (any(isnan, solver.sk[p.ps]) || any(isinf, solver.sk[p.ps])) && p.activate_mp
         if p.ps == P
             stats.status = :exception
@@ -661,9 +679,10 @@ function solve!(
         p.H(max(1, abs(p.H(solver.hk[p.ps]))) * 10 * eps(p.H)) # on evite les casts en mettant tout en la précision de s. Ensuite, on cast tout en H pour éviter les erreurs d'arrondis.
 
     stats.iter > 1 && (
-        solver.ξ > 0 ||
-        error("R2: prox-gradient step should produce a decrease but ξ = $(solver.ξ)")
-    ) # on check après la première itération car parfois Float16 crée beaucoup d'erreurs d'arrondis
+        solver.ξ > 0 || error(
+            "iR2Reg: prox-gradient step should produce a decrease but ξ = $(solver.ξ)",
+        )
+    ) # on check après la première itération car dans certains Float16 crée beaucoup d'erreurs d'arrondis
     sqrt_ξ_νInv = solver.ξ ≥ 0 ? sqrt(solver.ξ / p.ν) : sqrt(-solver.ξ / p.ν)
     ϵ += ϵr * sqrt_ξ_νInv # make stopping test absolute and relative
 
@@ -759,7 +778,12 @@ function solve!(
                 end
                 grad!(nlp, solver.xk[p.pg], solver.gfk[p.pg])
                 solver.special_counters[:∇f][p.pg] += 1
-                shift!(solver.ψ, solver.xk[p.ps])
+                if !(solver.inexact_prox)
+                    shift!(solver.ψ, solver.xk[p.ps])
+                else
+                    IR2Reg.shift!(solver.ψ, solver.xk[p.ps])
+                end
+
                 for i = 1:P
                     solver.xk[i] .= solver.xk[p.ps] # on met à jour fk en les précisions de Π. Exemple : fxk est en float16 à l'itération 0, on caste fxk en float32 et float64 pour les autres précisions et on les ajoute à fk
                     solver.fk[i] = Π[i](fkn)
@@ -791,7 +815,11 @@ function solve!(
             # new step starts here
             φk(d) = dot(solver.gfk[p.ps], d)
             mk(d) = φk(d) + solver.ψ(d)
-            prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps](p.ν))
+            if !(solver.inexact_prox)
+                prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps](p.ν))
+            else
+                IR2Reg.prox!(solver.sk[p.ps], solver.ψ, solver.mν∇fk[p.ps], Π[p.ps](p.ν))
+            end
             solver.special_counters[:prox][p.ps] += 1
             mks = mk(solver.sk[p.ps]) # on evite les casts en mettant tout en la précision de s
             solver.ξ =
@@ -849,6 +877,7 @@ function solve!(
         T,
         P,
     )
+    sqrt_ξ_νInv = solver.ξ ≥ 0 ? sqrt(solver.ξ / p.ν) : sqrt(-solver.ξ / p.ν) # recompute it here since the value is modified in the inner loop but not updated in the outer loop.
 
     verbose > 0 && if stats.status == :first_order
         @info log_row(
@@ -865,7 +894,7 @@ function solve!(
             ],
             colsep = 1,
         )
-        @info "R2: terminating with √(ξ/ν) = $(sqrt_ξ_νInv)"
+        @info "iR2Reg: terminating with √(ξ/ν) = $(sqrt_ξ_νInv)"
     end
 
     set_solution!(stats, solver.xk[end])
