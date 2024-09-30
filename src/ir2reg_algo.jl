@@ -311,20 +311,20 @@ function iR2Solver(
         :∇f => zeros(Int, length(Π)),
         :prox => zeros(Int, length(Π)),
     )
-    if typeof(h) <: NormL0 #need to do this to make precision of h match the lowest precision of Π for first iteration
+    if typeof(reg_nlp.h) <: NormL0 #need to do this to make precision of h match the lowest precision of Π for first iteration
         h = NormL0(Π[1](reg_nlp.h.lambda))
-    elseif typeof(h) <: NormL1
+    elseif typeof(reg_nlp.h) <: NormL1
         h = NormL1(Π[1](reg_nlp.h.lambda))
-    elseif typeof(h) <: NormL2
+    elseif typeof(reg_nlp.h) <: NormL2
         h = NormL2(Π[1](reg_nlp.h.lambda))
-    elseif typeof(h) <: NormLp
+    elseif typeof(reg_nlp.h) <: NormLp
         h = NormLp(Π[1](reg_nlp.h.λ), reg_nlp.h.p)
     else
         @error "Regularizer not supported. One must choose between NormL0, NormL1, NormL2, NormLp." #TODO add more regularizers.
     end
     ψ = nothing # initialize ψ to nothing then set it in the main loop
     ξ = one(params.H)
-    inexact_prox = (typeof(h) <: NormLp) ? true : false
+    inexact_prox = (typeof(reg_nlp.h) <: NormLp) ? true : false
     return iR2Solver(
         xk,
         mν∇fk,
