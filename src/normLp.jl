@@ -111,6 +111,18 @@ function (ψ::ShiftedNormLp)(y::AbstractVector)
     return ψ.h(ψ.xsy)
 end
 
+"""
+    prox!(y, ψ, q, σ; objGap = 1e-4)
+
+Computes the proximity operator of a shifted Lp norm.
+
+Inputs:
+    - y: array in which to store the result.
+    - ψ: ShiftedNormLp object.
+    - q: vector to which the proximity operator is applied.
+    - σ: scaling factor.
+    - objGap: desired quality of the solution in terms of duality gap.
+"""
 function prox!(
     y::AbstractArray,
     ψ::ShiftedNormLp,
