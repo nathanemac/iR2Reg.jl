@@ -142,7 +142,7 @@ function prox!(y::AbstractArray, ψ::ShiftedNormTVp, q::AbstractArray, σ::Real;
     # Compute y_shifted = xk + sj + q
     y_shifted = ψ.xk .+ ψ.sj .+ q
 
-    # Adjust lambda to account for σ (divide λ by σ)
+    # Adjust lambda to account for σ (multiply λ by σ)
     lambda_scaled = ψ.h.λ * σ
 
     # Allocate the x vector to store the intermediate solution
