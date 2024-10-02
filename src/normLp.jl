@@ -131,8 +131,8 @@ function prox!(
     # Compute y_shifted = xk + sj + q
     y_shifted = ψ.xk .+ ψ.sj .+ q
 
-    # Adjust lambda to account for σ (multiply λ by σ)
-    lambda_scaled = ψ.h.λ / σ
+    # Adjust lambda to account for σ (divide λ by σ)
+    lambda_scaled = ψ.h.λ * σ
 
     # Check if all elements of y_shifted are non-negative
     positive = Int32(all(v -> v >= 0, y_shifted) ? 1 : 0)
