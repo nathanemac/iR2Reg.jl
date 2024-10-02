@@ -535,7 +535,7 @@ function solve!(
         solver.xk[i] .= x0
     end
 
-    const PROX_TV_WARNING_ISSUED = Ref(false)
+    PROX_TV_WARNING_ISSUED = Ref(false)
     # Emit the warning message only the first time prox! is called on TVp
     if (typeof(reg_nlp.h) <: NormTVp) && p.objGap ≠ 1e-5 && !PROX_TV_WARNING_ISSUED[]
         @warn "The value of objGap is fixed at 1e-5 for TVp regularization in the C++ code. Specifying a different value will not affect the solution."
