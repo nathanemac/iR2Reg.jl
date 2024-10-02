@@ -323,12 +323,15 @@ function iR2Solver(
         h = NormL2(Π[1](reg_nlp.h.lambda))
     elseif typeof(reg_nlp.h) <: NormLp
         h = NormLp(Π[1](reg_nlp.h.λ), reg_nlp.h.p)
+    elseif typeof(reg_nlp.h) <: NormTVp
+        h = NormTVp(Π[1](reg_nlp.h.λ), reg_nlp.h.p)
     else
-        @error "Regularizer not supported. One must choose between NormL0, NormL1, NormL2, NormLp." #TODO add more regularizers.
+        @error "Regularizer not supported. One must choose between NormL0, NormL1, NormL2, NormLp, NormTVp."
     end
     ψ = nothing # initialize ψ to nothing then set it in the main loop
     ξ = one(params.H)
-    inexact_prox = (typeof(reg_nlp.h) <: NormLp) ? true : false
+    inexact_prox =
+        ((typeof(reg_nlp.h) <: NormLp) || (typeof(reg_nlp.h) <: NormTVp)) ? true : false
     return iR2Solver(
         xk,
         mν∇fk,
@@ -531,6 +534,14 @@ function solve!(
     for i = 1:P
         solver.xk[i] .= x0
     end
+
+    const PROX_TV_WARNING_ISSUED = Ref(false)
+    # Emit the warning message only the first time prox! is called on TVp
+    if (typeof(reg_nlp.h) <: NormTVp) && p.objGap ≠ 1e-5 && !PROX_TV_WARNING_ISSUED[]
+        @warn "The value of objGap is fixed at 1e-5 for TVp regularization in the C++ code. Specifying a different value will not affect the solution."
+        PROX_TV_WARNING_ISSUED[] = true  # Prevent further warnings
+    end
+
     has_bnds = solver.has_bnds
     if has_bnds # TODO
         @error "Bound constraints are not supported yet."
