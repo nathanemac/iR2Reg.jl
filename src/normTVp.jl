@@ -70,7 +70,7 @@ mutable struct ShiftedNormTVp{
     ) where {R<:Real}
         sol = similar(xk)
         xsy = similar(xk)
-        new{R,typeof(xk),typeof(sj),typeof(sol)}(h, xk, sj, sol, shifted_twice, xsy)
+        new{R,T,typeof(xk),typeof(sj),typeof(sol)}(h, xk, sj, sol, shifted_twice, xsy)
     end
 end
 
