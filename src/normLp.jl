@@ -36,11 +36,12 @@ A mutable struct representing a shifted NormLp function.
 """
 mutable struct ShiftedNormLp{
     R<:Real,
+    T<:Real,
     V0<:AbstractVector{R},
     V1<:AbstractVector{R},
     V2<:AbstractVector{R},
 }
-    h::NormLp{R,R}
+    h::NormLp{R,T}
     xk::V0
     sj::V1
     sol::V2
@@ -48,7 +49,7 @@ mutable struct ShiftedNormLp{
     xsy::V2
 
     function ShiftedNormLp(
-        h::NormLp{R,R},
+        h::NormLp{R,T},
         xk::AbstractVector{R},
         sj::AbstractVector{R},
         shifted_twice::Bool,
@@ -64,7 +65,7 @@ end
 
 Creates a ShiftedNormLp object with initial shift `xk`.
 """
-shifted(h::NormLp{R,R}, xk::AbstractVector{R}) where {R<:Real} =
+shifted(h::NormLp{R,T}, xk::AbstractVector{R}) where {R<:Real,T<:Real} =
     ShiftedNormLp(h, xk, zero(xk), false)
 
 """
@@ -73,10 +74,15 @@ shifted(h::NormLp{R,R}, xk::AbstractVector{R}) where {R<:Real} =
 Creates a ShiftedNormLp object by adding a second shift `sj`.
 """
 shifted(
-    ψ::ShiftedNormLp{R,V0,V1,V2},
+    ψ::ShiftedNormLp{R,T,V0,V1,V2},
     sj::AbstractVector{R},
-) where {R<:Real,V0<:AbstractVector{R},V1<:AbstractVector{R},V2<:AbstractVector{R}} =
-    ShiftedNormLp(ψ.h, ψ.xk, sj, true)
+) where {
+    R<:Real,
+    T<:Real,
+    V0<:AbstractVector{R},
+    V1<:AbstractVector{R},
+    V2<:AbstractVector{R},
+} = ShiftedNormLp(ψ.h, ψ.xk, sj, true)
 
 # Functions to get the name, expression, and parameters of the function
 fun_name(ψ::ShiftedNormLp) = "shifted Lp norm"
@@ -148,6 +154,7 @@ function prox!(
 
     # Store the result in y
     y .= s
+
 
     return y
 end

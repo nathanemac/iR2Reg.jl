@@ -50,11 +50,12 @@ A mutable struct representing a shifted NormTVp function.
 """
 mutable struct ShiftedNormTVp{
     R<:Real,
+    T<:Real,
     V0<:AbstractVector{R},
     V1<:AbstractVector{R},
     V2<:AbstractVector{R},
 }
-    h::NormTVp{R,R}
+    h::NormTVp{R,T}
     xk::V0
     sj::V1
     sol::V2
@@ -62,7 +63,7 @@ mutable struct ShiftedNormTVp{
     xsy::V2
 
     function ShiftedNormTVp(
-        h::NormTVp{R,R},
+        h::NormTVp{R,T},
         xk::AbstractVector{R},
         sj::AbstractVector{R},
         shifted_twice::Bool,
@@ -78,7 +79,7 @@ end
 
 Creates a ShiftedNormTVp object with initial shift `xk`.
 """
-shifted(h::NormTVp{R,R}, xk::AbstractVector{R}) where {R<:Real} =
+shifted(h::NormTVp{R,T}, xk::AbstractVector{R}) where {R<:Real,T<:Real} =
     ShiftedNormTVp(h, xk, zero(xk), false)
 
 """
@@ -87,10 +88,15 @@ shifted(h::NormTVp{R,R}, xk::AbstractVector{R}) where {R<:Real} =
 Creates a ShiftedNormTVp object by adding a second shift `sj`.
 """
 shifted(
-    ψ::ShiftedNormTVp{R,V0,V1,V2},
+    ψ::ShiftedNormTVp{R,T,V0,V1,V2},
     sj::AbstractVector{R},
-) where {R<:Real,V0<:AbstractVector{R},V1<:AbstractVector{R},V2<:AbstractVector{R}} =
-    ShiftedNormTVp(ψ.h, ψ.xk, sj, true)
+) where {
+    R<:Real,
+    T<:Real,
+    V0<:AbstractVector{R},
+    V1<:AbstractVector{R},
+    V2<:AbstractVector{R},
+} = ShiftedNormTVp(ψ.h, ψ.xk, sj, true)
 
 # Functions to get the name, expression, and parameters of the function
 fun_name(ψ::ShiftedNormTVp) = "shifted TVp norm"
