@@ -53,7 +53,7 @@ mutable struct ShiftedNormLp{
         xk::AbstractVector{R},
         sj::AbstractVector{R},
         shifted_twice::Bool,
-    ) where {R<:Real}
+    ) where {R<:Real,T<:Real}
         sol = similar(xk)
         xsy = similar(xk)
         new{R,T,typeof(xk),typeof(sj),typeof(sol)}(h, xk, sj, sol, shifted_twice, xsy)
