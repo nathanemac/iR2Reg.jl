@@ -143,6 +143,8 @@ function prox!(
     # Allocate the x vector to store the intermediate solution
     x = similar(y)
 
+    positive = Int32(all(v -> v >= 0, y_shifted) ? 1 : 0)
+
     ProxTV.PN_LPp(y_shifted, lambda_scaled, x, info, n, ψ.h.p, ws, positive, objGap)
 
     # Compute s = x - xk - sj
