@@ -138,15 +138,11 @@ function prox!(
     y_shifted = ψ.xk .+ ψ.sj .+ q
 
     # Adjust lambda to account for σ (multiply λ by σ)
-    lambda_scaled = ψ.h.λ * σ
-
-    # Check if all elements of y_shifted are non-negative
-    positive = Int32(all(v -> v >= 0, y_shifted) ? 1 : 0)
+    lambda_scaled = lambda_scaled = ψ.h.λ / σ
 
     # Allocate the x vector to store the intermediate solution
     x = similar(y)
 
-    # Call the PN_LPp function from ProxTV package
     ProxTV.PN_LPp(y_shifted, lambda_scaled, x, info, n, ψ.h.p, ws, positive, objGap)
 
     # Compute s = x - xk - sj
@@ -154,7 +150,6 @@ function prox!(
 
     # Store the result in y
     y .= s
-
 
     return y
 end
