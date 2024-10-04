@@ -132,13 +132,13 @@ Inputs:
     - `y`: Array in which to store the result.
     - `ψ`: ShiftedNormTVp object.
     - `q`: Vector to which the proximity operator is applied.
-    - `σ`: Scaling factor.
+    - `ν`: Scaling factor.
     - `objGap`: Desired quality of the solution in terms of duality gap (default `1e-5`).
 
 Although `objGap` can be specified, the TVp proximity operator uses a fixed objective gap of `1e-5` as defined in the C++ code. A warning will be emitted the first time this function is called.
 
 """
-function prox!(y::AbstractArray, ψ::ShiftedNormTVp, q::AbstractArray, σ::Real; kwargs...)
+function prox!(y::AbstractArray, ψ::ShiftedNormTVp, q::AbstractArray, ν::Real; kwargs...)
     n = length(y)
     ws = ProxTV.newWorkspace(n)
 
@@ -149,7 +149,7 @@ function prox!(y::AbstractArray, ψ::ShiftedNormTVp, q::AbstractArray, σ::Real;
     y_shifted = ψ.xk .+ ψ.sj .+ q
 
     # Adjust lambda to account for σ (multiply λ by σ)
-    lambda_scaled = ψ.h.λ * σ
+    lambda_scaled = ψ.h.λ * ν
 
     # Allocate the x vector to store the intermediate solution
     x = similar(y)

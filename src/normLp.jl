@@ -110,7 +110,7 @@ function (ψ::ShiftedNormLp)(y::AbstractVector)
 end
 
 """
-    prox!(y::AbstractArray, ψ::ShiftedNormLp, q::AbstractArray, σ::Real; objGap=1e-4)
+    prox!(y::AbstractArray, ψ::ShiftedNormLp, q::AbstractArray, ν::Real; objGap=1e-4)
 
 Computes the proximity operator of a shifted Lp norm.
 
@@ -118,14 +118,14 @@ Inputs:
     - `y`: Array in which to store the result.
     - `ψ`: ShiftedNormLp object.
     - `q`: Vector to which the proximity operator is applied.
-    - `σ`: Scaling factor.
+    - `ν`: Scaling factor.
     - `objGap`: Desired quality of the solution in terms of duality gap (default `1e-5`).
 """
 function prox!(
     y::AbstractArray,
     ψ::ShiftedNormLp,
     q::AbstractArray,
-    σ::Real;
+    ν::Real;
     objGap::Real = 1e-5,
 )
     n = length(y)
@@ -137,8 +137,8 @@ function prox!(
     # Compute y_shifted = xk + sj + q
     y_shifted = ψ.xk .+ ψ.sj .+ q
 
-    # Adjust lambda to account for σ (multiply λ by σ)
-    lambda_scaled = lambda_scaled = ψ.h.λ * σ
+    # Adjust lambda to account for ν (multiply λ by ν)
+    lambda_scaled = ψ.h.λ * ν
 
     # Allocate the x vector to store the intermediate solution
     x = similar(y)
